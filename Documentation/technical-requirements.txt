@@ -1,0 +1,280 @@
+# JanazApp Technical Requirements and Setup Guide
+
+## 1. Development Environment Requirements
+
+### Required Software
+- PHP 8.2+
+- Composer 2.x
+- Node.js 18+ and npm
+- Git
+- PostgreSQL 13+ (better suited for Heroku deployment)
+- Redis (for queues and caching)
+
+### Development Tools
+- Visual Studio Code or similar IDE
+- TablePlus or similar DB management tool
+- Postman for API testing
+- Git client
+
+## 2. Project Stack
+
+### Backend
+- Laravel 10.x
+- Laravel Breeze with Inertia.js
+- Laravel Sanctum for API authentication
+- Laravel WebSockets for real-time features
+- Laravel Socialite for WhatsApp integration
+- Laravel Media Library for file management
+- Laravel Notification system for email/WhatsApp notifications
+- Laravel Queue for background jobs
+- Laravel Scheduler for automated tasks
+
+### Frontend
+- Vue.js 3 (Composition API)
+- Inertia.js
+- shadcn-vue for UI components
+- Tailwind CSS
+- Vue Router (through Inertia)
+- Pinia for state management
+- vue3-toastify for notifications
+- Chart.js with Vue wrapper for dashboards
+
+### Database Design
+```sql
+-- Core tables
+users
+- id
+- name
+- email
+- password
+- role (enum: relative, insurance, dispatcher, funeral_service, expeditor)
+- phone
+- whatsapp_id
+- settings (json)
+- timestamps
+
+cases
+- id
+- ref_number
+- status (enum: new, open, in_progress, resolved, closed)
+- type (enum: local_burial, repatriation)
+- deceased_details (json)
+- location_details (json)
+- assigned_insurance_id
+- assigned_dispatcher_id
+- assigned_funeral_service_id
+- assigned_expeditor_id
+- created_by
+- timestamps
+
+documents
+- id
+- case_id
+- type (enum: passport, death_certificate, etc)
+- file_path
+- uploaded_by
+- status
+- verified_at
+- timestamps
+
+chat_messages
+- id
+- case_id
+- sender_id
+- receiver_id
+- message
+- message_type (enum: text, attachment)
+- read_at
+- timestamps
+
+notifications
+- id
+- type
+- notifiable_type
+- notifiable_id
+- data
+- read_at
+- timestamps
+
+case_activities
+- id
+- case_id
+- user_id
+- activity_type
+- description
+- metadata (json)
+- timestamps
+
+settings
+- id
+- key
+- value
+- timestamps
+```
+
+## 3. Deployment Requirements
+
+### Heroku Setup
+- Heroku Account
+- Heroku CLI
+- Heroku PostgreSQL addon
+- Heroku Redis addon
+- Heroku Scheduler addon
+- Custom domain (optional)
+- SSL certificate (Let's Encrypt)
+
+### GitHub Setup
+- GitHub repository
+- GitHub Actions workflow
+- GitHub Secrets for deployment
+
+### Required Environment Variables
+```env
+# App
+APP_NAME=JanazApp
+APP_ENV=production
+APP_KEY=
+APP_DEBUG=false
+APP_URL=https://your-domain.com
+
+# Database
+DATABASE_URL=
+
+# Redis
+REDIS_URL=
+
+# Mail
+MAIL_MAILER=smtp
+MAIL_HOST=
+MAIL_PORT=587
+MAIL_USERNAME=
+MAIL_PASSWORD=
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=
+MAIL_FROM_NAME=
+
+# WhatsApp API
+WHATSAPP_API_KEY=
+WHATSAPP_API_SECRET=
+
+# Storage
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=
+AWS_BUCKET=
+```
+
+## 4. GitHub Actions Workflow
+
+```yaml
+name: Deploy to Heroku
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install Composer dependencies
+        run: composer install --no-dev --optimize-autoloader
+        
+      - name: Install NPM dependencies
+        run: npm ci
+        
+      - name: Build assets
+        run: npm run build
+        
+      - name: Deploy to Heroku
+        uses: akhileshns/heroku-deploy@v3.12.14
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
+```
+
+## 5. Required Procfile for Heroku
+
+```
+web: vendor/bin/heroku-php-apache2 public/
+worker: php artisan queue:work --tries=3 --queue=default,notifications
+release: php artisan migrate --force
+```
+
+## 6. Security Requirements
+
+### Authentication
+- Multi-factor authentication for admin users
+- Role-based access control
+- API token authentication for external services
+- Session management and security
+- Password policies
+
+### Data Protection
+- Encryption at rest
+- Encryption in transit (SSL/TLS)
+- GDPR compliance for EU users
+- Data backup strategy
+- Data retention policies
+
+### Audit Trail
+- User activity logging
+- System access logging
+- Change tracking
+- Error logging and monitoring
+
+## 7. Performance Requirements
+
+### Optimization
+- Redis caching
+- Queue system for background jobs
+- Asset optimization and CDN
+- Database query optimization
+- API rate limiting
+
+### Monitoring
+- New Relic or similar APM tool
+- Error tracking (Sentry)
+- Performance metrics
+- Uptime monitoring
+- Log management
+
+## 8. Integration Requirements
+
+### External Services
+- WhatsApp Business API
+- Email service (SMTP)
+- SMS gateway
+- Payment gateway (if needed)
+- Government websites APIs
+- Airline booking systems
+- Document verification services
+
+## 9. Testing Requirements
+
+### Test Types
+- Unit tests (PHPUnit)
+- Feature tests
+- Browser tests (Laravel Dusk)
+- API tests
+- Performance tests
+- Security tests
+
+### CI/CD Pipeline
+- Automated testing
+- Code quality checks
+- Security scanning
+- Deployment automation
